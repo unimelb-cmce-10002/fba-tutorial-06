@@ -1,8 +1,8 @@
 project:
   render:
     - tutorial.qmd
-title: 'Teaching Guide: R version'
+title: 'Teaching Guide: Storing & Retrieving Data'
 format:
   html:
-    output-file: "tutorial-r-teaching-guide"
+    output-file: "tutorial-06-teaching-guide"
     output-ext:  "html"

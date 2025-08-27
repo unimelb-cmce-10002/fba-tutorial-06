@@ -1,12 +1,141 @@
 <!-- question-type: prepare -->
-### Exercise 2: Title
+### Exercise 2: Digging Deeper into User Behaviour
 
-This is the text for the question, with its accompanying code 
+In Exercise 1, we built a market baseline from auction outcomes: prices, bid counts, and seller summaries. That showed us where to look, but not how those outcomes happened.
+Next, we'll bring in behavioral telemetry from a JSON file (devices/sessions). Using `dplyr`/`tidyr` verbs, we'll flatten the nested JSON and link it to our auctions so we can ask: who was active, on which devices, and how activity clustered around particular sellers.
+
+
+**(a)**. An example record in the JSON file `data/bids.jsonl` is as follows: 
+
+```json
+{
+  "auction_id": "A00001",
+  "bid_time": "2024-11-28T23:27:00Z",
+  "bidder": {
+    "id": "B00153",
+    "rating": 83,
+    "country": "AU"
+  },
+  "amount": 21.43,
+  "device": {
+    "os": "iOS",
+    "browser": "Firefox"
+  },
+  "auto_bid_flag": false,
+  "ip_address": "203.0.113.189"
+}
+```
+
+Explain the structure of this record in words (what's at the top level vs. what's nested, and what fields each nested object contains).
+
+**(b)**. Now let's load the data from the file `data/bids.jsonl` and examine the first two rows. Complete the starter code below and identify any nested columns:
+
+::: {.callout-tip collapse = "true"}
+## Streaming JSON has a different structure.
+
+This JSON file has a different structure than we saw in the reading: it's streaming JSON (JSON Lines)—one complete JSON record per line, with no surrounding [] array and no commas between records.
+
+Think of it like a log file: one complete JSON record per line.
+(Regular JSON is often one big list: `[{...}, {...}, ...]`.)
+
+Why it's used: handles large files smoothly — you can read it line by line without loading everything.
+
+How to load in R: use `stream_in()` (not `read_json`()`).
+
+Common gotcha: don't add brackets or commas between lines; each line must be valid JSON on its own.
+
+:::
 
 ```{r}
-# Example code for the question
-1 + 1
+#| eval: false
+bids_json <- stream_in(file("YOUR_FILE_NAME"))
+
+head(YOUR_DATA_SET, 2)
 ```
+
+**(c)** Complete the code below to unnest the JSON data:
+
+```{r}
+#| eval: false
+bids_json <-
+    bids_json  |> 
+    unnest_wider(YOUR_VARIABLE, names_sep = "_") |> 
+    YOUR_FUNCTION(YOUR_VARIABLE, names_sep = "_") 
+
+```
+
+**(d)**. One piece of evidence pointing towards shill bidding is if multiple bidders are using the same IP address. Explain why this is the case, then complete the code below to isolate those instances.
+
+::: {.callout-tip collapse = "true"}
+What's an IP address (and why we care)?
+
+* Think of an IP address like a street address for a device on the internet. It helps websites know where to send data.
+
+* On most shared Wi-Fi (homes, offices, libraries), many people/devices can appear under the same public IP. So “same IP” ≠ “same person.”
+
+* IPs can change over time (dynamic addresses) and can be hidden/changed with VPNs — so they're imperfect identity signals.
+
+:::
+
+```{r}
+#| eval: false
+same_ip <-
+    bids_json |>
+    distinct(auction_id, ip_address, bidder_id) |>
+    count(YOUR_VARIABLE, YOUR_VARIABLE) |>
+    filter(YOUR_CONDITION) |>
+    arrange(desc(n)) 
+```
+
+**(e)**. Another possible sign of shill bidding could be auto-bidding. Explain when auto-bids could be signs of shill-bids versus legitimate behaviour. Complete the code below to measure the share of auto-bids per auction.
+
+::: {.callout-tip collapse = true}
+What is auto-bidding (proxy bidding)?
+
+* It's a feature where you set a maximum price you're willing to pay and the system bids for you automatically in small steps to keep you on top—without you watching the auction.
+
+* Why people use it: convenience and to avoid overbidding in the moment.
+
+* What it looks like in the data: a series of quick, incremental bids appearing from the same bidder as others place bids.
+
+Important: auto-bidding is normal. It's only review-worthy if you also see other flags (e.g., shared IPs, unusual timing patterns, repeated ties to the same seller).
+:::
+
+```{r}
+#| eval: false
+auto_bids <-
+    bids_json |>
+    group_by(auction_id) |>
+    summarise(
+        num_auto_bids = sum(YOUR_VARIABLE, na.rm = TRUE),
+        total_bids    = YOUR_FUNCTION(),
+        share_auto    = YOUR_VARIABLE / YOUR_VARIABLE
+    ) |>
+    arrange(desc(num_auto_bids))
+```
+
+**(f)** Let's combine the data on shared IP addresses and auto-bids into one data-frame. Complete the code below, and then identify any auctions that might have seen shill bidding. Explain your  answer. 
+
+```{r}
+#| eval: false
+# aggregate IP data to the auction level for easy join
+same_ip_auctions <-
+    same_ip |>
+    group_by(auction_id) |>
+    summarise(
+        n_shared_ips = n(),           # how many IPs in this auction were used by 2+ bidders
+        max_shared_n = max(n),        # largest number of bidders sharing a single IP
+        .groups = "drop"
+    )
+
+shill_signals <- 
+    YOUR_DATA |>
+    YOUR_FUNCTION(YOUR_DATA, by = "auction_id") |> 
+    arrange(desc(n_shared_ips), desc(share_auto))
+
+```
+
+
 
 <!-- BEGIN PROFILE:r-teaching-guide -->
 ::: {.content-visible when-profile="r-teaching-guide"}
@@ -22,21 +151,47 @@ Teaching Note
 🎯 **Learning Objective** 
 Students should:
 
-- XXXXX
+- Explain the structure of a nested JSON Lines record in plain language.
+
+- Flatten nested JSON (bidder, device) into tidy columns and identify nested fields.
+
+- Use simple telemetry signals (shared IPs, auto-bid share) to create a review list of auctions—clearly distinguishing suggestive patterns from evidence.
 
 ✅   **Core Concepts to Highlight**
 
-List them here
+- Steaming JSON vs JSON: one record per line; load with `stream_in()`; then `unnest_wider()` to flatten nested objects.
 
+- Nesting → columns: bidder.* → bidder_id, bidder_rating, bidder_country; device.* → device_os, device_browser.
+
+- Granularity matters: summaries at the auction level vs auction–IP vs auction–bidder will change row counts and joins.
+
+- IP addresses are weak identifiers: shared Wi-Fi/NAT/VPNs create false positives; still useful when combined with other signals.
+
+- Auto-bids are not inherently suspicious: they're a common feature; look for unusually high share_auto with other flags.
+
+- Flags ≠ verdicts: manager-ready language should emphasise “review”/“follow-up”, not accusations.
 
 💬 **Suggested In-Class Prompts** (if needed)
 
-List as needed
+“In one or two sentences, describe what is at the top level of the JSON vs. what's nested.”
+
+“Give one benign and one suspicious reason for multiple bidders sharing an IP in the same auction.”
+
+“When might a high share of auto-bids be normal? When might it warrant a review?”
 
 📌 **Common Misunderstandings**
 
-List as needed
+Using `read_json()` on streaming JSON → fails or loads only first line. Use `stream_in()` and then unnest_wider().
 
+Not flattening nested fields → students can't reference bidder_id/device_os directly.
+
+Granularity mistakes in joins → duplicate rows when joining per-IP tables to per-auction tables. Remedy: summarise to the intended level first.
+
+Assuming “same IP = same person.” Emphasise shared networks and VPNs; treat as a weak, noisy signal.
+
+Treating auto-bids as inherently shady. They're common; context matters.
+
+Overclaiming. Outliers are candidates for review, not proof of shilling.
 :::
 
 :::
@@ -55,10 +210,91 @@ Solution
 
 ::: {.solution-block-body}
 
-Here’s the explanation and code:
+**(a)**.
+Top level: `auction_id`, `bid_time`, `amount`, `auto_bid_flag`, `ip_address`.
+
+Nested objects:
+
+bidder → id, rating, country
+
+device → os, browser
+
+After flattening, you'd expect columns like `bidder_id`, `bidder_rating`, `device_os`, `device_browser`.
+
+**(b)**.
+
+The nested columns are bidder and device (each is a small object that needs unnesting). Everything else is top-level.
 
 ```{r}
-print("Hello, world!")
+#| eval: false
+
+bids_json <- stream_in(file("data/bids.jsonl"))
+
+head(bids_json, 2)
+
+```
+
+**(c)**.
+```{r}
+#| eval: false
+bids_json <-
+    bids_json  |> 
+    unnest_wider(bidder, names_sep = "_") |> 
+    unnest_wider(device, names_sep = "_") 
+
+```
+
+**(d)**.
+
+Multiple bidders on the same IP within the same auction can indicate coordinated accounts or one person switching identities. However, shared Wi-Fi (homes, offices, libraries) and VPNs mean it's only a weak signal—use it to review, not to conclude.
+
+```{r}
+#| eval: false
+same_ip <-
+    bids_json |>
+    distinct(auction_id, ip_address, bidder_id) |>
+    count(auction_id, ip_address) |>
+    filter(n > 1) |>
+    arrange(desc(n)) 
+```
+
+**(e)**.
+
+Auto-bidding is a normal feature (proxy bidding up to a limit). It's review-worthy when the share of auto-bids is unusually high and coincides with other flags (e.g., shared IPs, repeated bidder–seller ties, tight timing bursts); otherwise it's often just convenience.
+
+```{r}
+#| eval: false
+auto_bids <-
+    bids_json |>
+    group_by(auction_id) |>
+    summarise(
+        num_auto_bids = sum(auto_bid_flag, na.rm = TRUE),
+        total_bids    = n(),
+        share_auto    = num_auto_bids / total_bids
+    ) |>
+    arrange(desc(num_auto_bids))
+```
+
+**(f)**.
+
+Focus on auctions where (i) at least one IP is shared by 2+ bidders in the same auction and (ii) the auto-bid share is high. Discuss what you think valid auto-bid shares are in class.
+
+```{r}
+#| eval: false
+same_ip_auctions <-
+  same_ip |>
+  group_by(auction_id) |>
+  summarise(
+    n_shared_ips = n(),           # how many IPs in this auction were used by 2+ bidders
+    max_shared_n = max(n),        # largest number of bidders sharing a single IP
+    .groups = "drop"
+  )
+
+shill_signals <- 
+    same_ip_auctions |>
+    left_join(auto_bids, by = "auction_id") |> 
+    arrange(desc(n_shared_ips), desc(share_auto))
+
 ```
 :::
 

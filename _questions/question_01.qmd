@@ -1,12 +1,76 @@
 <!-- question-type: prepare -->
-### Exercise 1: Title
+### Exercise 1: Auction results baseline.
 
-This is the text for the question, with its accompanying code 
+**(a).** Read the CSV file located at `data/auction_results.csv` and examine its structure by completing the code below:
 
 ```{r}
-# Example code for the question
-1 + 1
+#| eval: false
+# Load the data
+auction_results <-
+    YOUR_CODE("data/auction_results.csv")
+
+# Examine the structure
+YOUR_CODE(auction_results)
 ```
+
+**(b)**. What does one row represent in the dataset? Which columns look most informative for understanding auction outcomes?
+
+**(c)**. Produce 3 plots using the starter code below:
+
+1. A histogram of `final_price`
+2. A histogram of `num_bids`
+3. A scatterplot of the relationship between `final_price` and `num_bids`.
+
+```{r}
+#| eval: false
+
+p1 <-
+    auction_results |>
+    ggplot() +
+    geom_histogram(aes(x = YOUR_CODE)) +
+    theme_minimal()
+
+p2 <-
+    auction_results |>
+    ggplot() +
+    YOUR_CODE(aes(x = YOUR_CODE), n_bins = YOUR_CODE) +
+    theme_minimal()
+
+p3 <-
+    auction_results |>
+    ggplot() +
+    YOUR_CODE(aes(x = YOUR_CODE,
+                   y = YOUR_CODE)
+               ) +
+    geom_smooth(method = "lm") +
+    theme_minimal()
+
+p1 / p2 / p3
+```
+
+
+
+
+**(d)**. Provide a short explanation of your findings from (c). Are there any patterns that are suggestive of shill bidding?
+
+**(e)**. Next, let's explore how certain auction outcomes vary across sellers. Complete the starter code below to produce summary statistics by seller:
+
+```{r}
+#| eval: false
+seller_profile <- 
+    auction_results |>
+    group_by(seller_id) |>
+    summarise(
+        n_auctions    = YOUR_CODE(),
+        median_price  = YOUR_CODE(final_price, na.rm = TRUE),
+        median_bids   = YOUR_CODE(num_bids, na.rm = TRUE),
+        share_missing_winner = YOUR_CODE(is.na(YOUR_CODE)),
+        .groups = "drop"
+    ) |>
+    arrange(YOUR_CODE(n_auctions))
+```
+
+**(f)**. Based on the seller profiles in (e), are there any patterns suggestive of shill bidding? What further information would you need to confirm any suspicion?
 
 <!-- BEGIN PROFILE:r-teaching-guide -->
 ::: {.content-visible when-profile="r-teaching-guide"}
@@ -22,20 +86,37 @@ Teaching Note
 🎯 **Learning Objective** 
 Students should:
 
-- XXXXX
+- Load and inspect an auctions-level CSV and correctly state the unit of observation.
+- Create and interpret basic plots (histograms, scatter) linking `final_price` and `num_bids`.
+- Distinguish suggestive patterns from evidence, and articulate what additional data would be needed to assess shill bidding.
 
 ✅   **Core Concepts to Highlight**
 
-List them here
-
+* Granularity: One row = one completed auction outcome.
+* Right-skew: Expect skew in final_price and num_bids; medians are often more informative than means.
+* Association ≠ proof: More bids often correlate with higher prices, but counterexamples are common.
+* "Suggestive" vs "confirmatory": Patterns like high num_bids with low final_price, or high final_price with few bids, are flags—not verdicts.
+* Seller aggregation: Summaries (n_auctions, median_price, median_bids, share_missing_winner) surface differences.
 
 💬 **Suggested In-Class Prompts** (if needed)
 
-List as needed
+What does one row represent? Say it in one sentence."
+
+"Before plotting: predict the shape of the final_price histogram. Were you right?"
+
+"Point to one dot in the scatter that doesn't fit the general trend. Give one benign and one suspicious explanation."
+
+"winner_id is missing—name one data reason and one market reason."
+
+"If you could request two extra fields to investigate shilling, what would they be and why?"
 
 📌 **Common Misunderstandings**
 
-List as needed
+"More bids must mean higher price." → Often, but not always; commodities, ceilings, or reserve mechanics can flatten prices.
+
+Treating outliers as proof of shilling. → They are review candidates only.
+
+Using means on skewed data. → Prefer medians/quantiles; acknowledge skew explicitly in commentary.
 
 :::
 
@@ -55,11 +136,87 @@ Solution
 
 ::: {.solution-block-body}
 
-Here’s the explanation and code:
+**(a)**.
 
 ```{r}
-print("Hello, world!")
+# Load the data
+auction_results <-
+    read_csv("data/auction_results.csv")
+
+# Examine the structure
+glimpse(auction_results)
 ```
+
+**(b)**.
+
+One row = one auction outcome for a specific `item_id` run by a `seller_id`.
+
+Most informative for outcomes:
+`final_price` (price result), `num_bids` (competitive intensity) and `seller_id` (lets us compare performance across sellers).
+
+
+**(c)**. 
+
+```{r}
+p1 <-
+    auction_results |>
+    ggplot() +
+    geom_histogram(aes(x = final_price)) +
+    theme_minimal()
+
+p2 <-
+    auction_results |>
+    ggplot() +
+    geom_histogram(aes(x = num_bids), bins = 20) +
+    theme_minimal()
+
+p3 <-
+    auction_results |>
+    ggplot(aes(
+        x = num_bids,
+        y = final_price)
+        ) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    theme_minimal()
+
+p1 / p2 / p3
+
+```
+
+**(d)**.
+
+**(e)**.
+
+```{r}
+#| eval: false
+seller_profile <- 
+    auction_results |>
+    group_by(seller_id) |>
+    summarise(
+        n_auctions    = n(),
+        median_price  = median(final_price, na.rm = TRUE),
+        median_bids   = median(num_bids, na.rm = TRUE),
+        share_missing_winner = sum(is.na(winner_id)),
+        .groups = "drop"
+    ) |>
+    arrange(desc(n_auctions))
+```
+
+**(f)**. 
+Interpreting seller profiles & what else you'd need
+
+Possibly suggestive seller patterns (from `n_auctions`, `median_price`, `median_bids`):
+
+- High `median_bids` but low median_price across many auctions.
+- Extreme `median_price` (much higher/lower than peers) given similar `median_bids`.
+- Further information required to assess/confirm, such as:
+    - Bid-level timelines (who bid, when, increments, rapid back-and-forth patterns).
+    - Repeated bidder–seller ties (same bidder frequently active in the same seller's auctions).
+    - Device/IP or account linkage between seller and active bidders (from JSON/telemetry).
+
+
+
 :::
 
 :::

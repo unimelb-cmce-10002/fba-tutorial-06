@@ -1,3 +1,55 @@
-## The Business Challenge
+## The Business Challenge: Identifying Shill Bidding
 
-Explain the Business Challenge and set up in this file
+Online auctions are big business. Platforms like eBay, Yahoo! Auctions, and specialist marketplaces connect millions of buyers and sellers every day. But with opportunity comes risk: not every bidder is playing fair.
+
+One form of fraud is called **shill bidding**. This happens when sellers (or their associates) secretly bid on their own items. The goal isn't to win the auction, but to drive up the price and trick genuine buyers into paying more than they otherwise would. Shill bidders might:
+
+- Place bids just high enough to outbid real customers, forcing them to keep bidding.
+- Use multiple accounts or devices to hide their identity.
+- Bid early and often to create the illusion of demand.
+
+For an auction platform, shill bidding creates serious problems:
+
+- It damages buyer trust, which can reduce participation and long-term revenue.
+- It raises legal and reputational risks if fraud is not detected.
+- It can distort the competitive landscape for honest sellers.
+
+Your task in this exercise is to step into the role of an analyst at an online auction company. You've been asked to examine bidding data and look for patterns that might indicate suspicious activity. To do this, you'll need to:
+
+1. Explore the auctions data provided in multiple formats (CSV, JSON, database).
+2. Use wrangling and visualization tools to spot differences between ordinary buyers and suspicious bidders.
+3. Interpret these patterns in business terms — would a manager at the auction platform be worried?
+
+## The Data: Auction Bids and Devices
+
+We'll be working with synthetic data that simulates an online auction platform. It comes in a few different formats:
+
+ - CSV / SQLite: structured data on auctions, bidders, bid amounts, and timestamps.
+- JSON: extra details about each bidder's activity, such as the devices or sessions they used.
+
+Together, these files let us see not just who is bidding and how much, but also how they are bidding — which can be a clue for spotting suspicious behavior.
+
+## The Method: Wrangling Data Across Backends
+
+In this tutorial, the focus isn't just on wrangling data — it's on seeing how the same tidyverse tools work across different backends. We'll be using:
+
+- `dplyr`: to filter, group, summarise, and join data.
+- `tidyr`: to reshape nested or messy data into tidy tables.
+
+You'll apply these verbs on top of different data sources:
+
+- Flat files (CSV)
+- Databases (SQLite)
+- Nested structures (JSON)
+
+The key idea is that once you know the tidyverse workflow, it carries over no matter where the data lives.
+
+```{r}
+#| message: false
+library(tidyverse) # Core tidyverse for wrangling and plotting
+library(patchwork) # Combine multiple plots
+library(jsonlite) # For reading JSON files
+library(DBI) # For working with databases
+library(duckdb) # for working with duckdb databases
+```
+

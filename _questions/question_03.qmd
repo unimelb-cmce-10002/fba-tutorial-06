@@ -1,12 +1,147 @@
-<!-- question-type: prepare -->
-### Exercise 3: Title
+<!-- question-type: inclass -->
+### Exercise 3: Working with a Database
 
-This is the text for the question, with its accompanying code 
+Our next data source is a database so we can join tables at scale (bids, auctions, items, users, orders) and study relationships: who bids on whom, how concentrated that behaviour is, and whether it translates into wins. Using the same `dplyr` verbs on a database backend, we'll push work to the database and only `collect()` results when needed.
+
+**(a)**. Explain how a database differs from the CSV and JSON data types we have seen so far.
+
+**(b)**. Connect to the database stored in `data/auctions.duckdb` and list the tables present in it by completing the code below.
 
 ```{r}
-# Example code for the question
-1 + 1
+#| eval: false
+con <- dbConnect(duckdb(), dbdir = "YOUR_FILENAME")
+
+dbListTables(YOUR_CODE)
 ```
+
+**(c)** Find what information is present in each table by completing the code below. 
+
+```{r}
+#| eval: false
+
+tbl(con, "bids")       |> glimpse()
+tbl(con, "YOUR_TABLE") |> glimpse()
+tbl(con, "YOUR_TABLE") |> YOUR_FUNCTION()
+YOUR_FUNCTION(con, "YOUR_TABLE") |> YOUR_FUNCTION()
+YOUR_FUNCTION(YOUR_OBJECT, "YOUR_TABLE") |> YOUR_FUNCTION()
+```
+
+**(d)** For each bidder, count their total number of bids and the number of auctions they have particpated in by completing the code below. 
+
+```{r}
+#| eval: false
+bidder_activity <- 
+    tbl(con, "bids") |>
+    group_by(YOUR_VARIABLE) |>
+    YOUR_VARIABLE(
+        total_bids = YOUR_FUNCTION(),
+        auctions_participated = YOUR_FUNCTION(YOUR_VARIABLE),
+        .groups = "drop"
+    ) |>
+    collect()
+
+```
+
+**(e)** A colleague suggests that you look at links between buyers and sellers. We will want to see how often does the same bidder bid against the same seller, and across how many auctions. Why might these metrics useful for identifying possible shill bidding behaviour and could they be suggestive of something more innocent?
+
+**(f)**. We'll go a slightly different route and instead compute the share of one bidder's bids that go to their top seller. Is there an advantage to this versus your colleagues suggestion in (e)?
+
+**(g)** Complete the code below to compute the share of one bidder's bids that go to their top seller. Note that there are many small steps to achieve this goal. Think through why each is necessary
+
+```{r}
+#| eval: false
+# Step 1: rename to make easier to track
+bids <- 
+    tbl(con, "bids") |>
+    rename(bidder_id = user_id)
+
+# Step 2: Link bids to the seller who's 
+#         auction they are participating in
+#
+# Note: here we are selecting the min. number of columns
+#       we need to keep
+bids_items <- 
+    bids |>
+    left_join(tbl(con, "auctions") |> 
+                  select(auction_id, item_id),
+                by = "auction_id") |>
+    left_join(tbl(con, "items")    |> 
+                  select(item_id, seller_id),
+                by = "item_id")
+
+# Step 3: How many bids does a bidder make in total?
+total_bids_per_bidder <- 
+    bids_items |>
+    YOUR_FUNCTION(bidder_id, name = "total_bids")
+
+# Step 4: How many bids does a bidder make to each seller?
+bidder_seller_bids <- 
+    bids_items |>
+    YOUR_FUNCTION(YOUR_VARIABLE, YOUR_VARIABLE, name = "bids_to_seller")
+
+# Find the highest concentration a bidder bids go to one seller
+concentration <- 
+    YOUR_DATASET |>
+    YOUR_FUNCTION(YOUR_DATASET, 
+              by = "bidder_id") |>
+    mutate(seller_share = YOUR_VARIABLE / YOUR_VARIABLE) |>
+    group_by(bidder_id) |> 
+    slice_max(seller_share, n = 1) |> 
+    collect()
+```
+
+**(h)** Do any of these bid concentration ratios appear "too high"? Identify a set of bidders whose behaviour you want to explore more closely. Explain your decision making strategy here.
+
+
+**(i)** Why might possible shill bidder's share of bids to one seller be an intermediate value, like 20 - 30 percent, rather than over 50%?
+
+**(j)** Concentrating one's bidding to a given seller is likely not enough. People who shill bid do not want to win the auction. Calculate how often the bidders win the auctions they participate in. 
+
+```{r}
+#| eval: false
+
+# Step 1: winners per auction
+winners <- 
+    tbl(con, "orders") |>
+    select(auction_id, winner_id)
+
+# Step 2: distinct auctions each bidder joined
+bidder_auctions <- 
+    bids_items |>
+    YOUR_FUNCTION(bidder_id, auction_id)
+
+# Step 3: join winners and compute win_rate
+win_rates <- 
+    bidder_auctions |>
+    YOUR_FUNCTION(winners, by = "auction_id") |>
+    mutate(won = bidder_id == winner_id) |>
+    group_by(bidder_id) |>
+    summarise(
+        auctions_participated = YOUR_FUNCTION(),
+        auctions_won          = YOUR_FUNCTION(YOUR_VARIABLE, na.rm = TRUE),
+        .groups = "drop"
+    ) |>
+    mutate(win_rate = YOUR_VARIABLE / YOUR_VARIABLE) |> 
+    collect()
+
+```
+
+**(k)**. Join the `win_rate` data to the `concentration` data and save the combined dataset to a file `data/shill_metrics.csv`.
+
+
+```{r}
+#| eval: false
+shill_metrics <-
+    YOUR_DATASET |> 
+    YOUR_FUNCTION(YOUR_DATASET, by = "bidder_id")
+
+YOUR_FUNCTION(YOUR_DATASET, "data/shill_metrics.csv")
+```
+
+**(l)**. Create a scatter plot that shows the relationship between `win_rate` and `seller_share`. Are there any regions in this plot that are indicative of shill bidding?
+
+**(m)** (Optional, if time). Propose an alternative way to use the `win_rate` and `concentration` data, along with any other data you have access to in the exercise to identify possible shill bidders. Explain why your method works. You can explain your method intuitively, you do not need to code a solution.
+
 
 <!-- BEGIN PROFILE:r-teaching-guide -->
 ::: {.content-visible when-profile="r-teaching-guide"}
@@ -22,20 +157,38 @@ Teaching Note
 🎯 **Learning Objective** 
 Students should:
 
-- XXXXX
+- Explain how a database differs from CSV/JSON (multiple linked tables, queries run in-DB, lazy evaluation).
+- Use dplyr on a DB backend (DuckDB) to join tables and compute two simple metrics:
+(1) concentration on top seller (seller_share) and (2) win rate (auctions won / auctions participated).
+- Interpret a win_rate vs seller_share plot and propose a screening rule (review list, not verdicts).
+- (Optional stretch) Understand the “excess win rate” idea (actual – fair-chance expected) and why it’s sensible but a step up.
 
 ✅   **Core Concepts to Highlight**
 
-List them here
+- Data model & keys: bids (events) join to auctions → items → seller_id; orders hold winner_id.
+- Granularity: win rate uses distinct auctions per bidder, not raw bid rows.
+- Lazy tables: tbl(con, ...) runs SQL in DuckDB; collect() only at the end.
 
 
 💬 **Suggested In-Class Prompts** (if needed)
 
-List as needed
+“Say in one sentence how a database differs from CSV/JSON for our purposes.”
+
+“Why must win rate use distinct auctions?” (Avoids ‘more bids = higher win rate’ confusion.)
+
+“Give one benign and one review reason for strong bidder–seller ties.”
+
+“On the scatter (win_rate vs seller_share), point to the review zone and justify a simple rule.”
 
 📌 **Common Misunderstandings**
 
-List as needed
+Counting bids instead of auctions in win rate.
+
+Join explosions (forgetting to reduce to needed columns before joins).
+
+Treating high concentration as proof; ignoring niche categories/loyalty.
+
+Forgetting to collect().
 
 :::
 
@@ -55,11 +208,225 @@ Solution
 
 ::: {.solution-block-body}
 
-Here’s the explanation and code:
+**(a)**.
+
+A database holds multiple related tables linked by keys (e.g., auction_id, item_id); CSV/JSON are single files.
+
+You query the data (joins, filters, summaries) and the database does the heavy lifting; you only pull results you need.
+
+Same dplyr verbs work, but they're translated to SQL and run inside the DB (fast, scalable).
+
+You can join at scale without loading everything into memory.
+
+**(b)**. 
 
 ```{r}
-print("Hello, world!")
+#| eval: false
+con <- dbConnect(duckdb(), dbdir = "data/auctions.duckdb")
+
+dbListTables(con)
 ```
+
+**(c)**
+
+```{r}
+#| eval: false
+
+tbl(con, "bids")     |> glimpse()
+tbl(con, "auctions") |> glimpse()
+tbl(con, "users")    |> glimpse()
+tbl(con, "items")    |> glimpse()
+tbl(con, "orders")   |> glimpse()
+```
+
+**(d)**
+
+```{r}
+#| eval: false
+bidder_activity <- 
+    tbl(con, "bids") |>
+    group_by(user_id) |>
+    summarise(
+        total_bids = n(),
+        auctions_participated = n_distinct(auction_id),
+        .groups = "drop"
+    ) |>
+    collect()
+
+```
+
+**(e)** 
+
+Useful for shill review: repeated bidder↔seller ties across many auctions can suggest coordination or price support for that seller.
+
+Innocent stories: loyal customers in a niche category, repeat buyers for a specific brand, local sellers a buyer prefers, or small markets where the same people often meet.
+
+**(f)**. 
+
+It normalises for activity: a single number (0–1) that's comparable across bidders, regardless of total bids.
+
+Easier to rank and screen than raw pair counts, which are biased toward very active bidders.
+
+Trade-off: you lose detail about 2nd/3rd sellers, but for a first pass it's clear and actionable.
+
+**(g)**
+
+```{r}
+#| eval: false
+# Step 1: rename to make easier to track
+bids <- 
+    tbl(con, "bids") |>
+    rename(bidder_id = user_id)
+
+# Step 2: Link bids to the seller who's 
+#         auction they are participating in
+#
+# Note: here we are selecting the min. number of columns
+#       we need to keep
+bids_items <- 
+    bids |>
+    left_join(tbl(con, "auctions") |> 
+                  select(auction_id, item_id),
+                by = "auction_id") |>
+    left_join(tbl(con, "items")    |> 
+                  select(item_id, seller_id),
+                by = "item_id")
+
+# Step 3: How many bids does a bidder make in total?
+total_bids_per_bidder <- bids_items |>
+  count(bidder_id, name = "total_bids")
+
+# Step 4: How many bids does a bidder make to each seller?
+bidder_seller_bids <- bids_items |>
+  count(bidder_id, seller_id, name = "bids_to_seller")
+
+# Find the highest concentration a bidder bids go to one seller
+concentration <- 
+    bidder_seller_bids |>
+    left_join(total_bids_per_bidder, 
+              by = "bidder_id") |>
+    mutate(seller_share = bids_to_seller / total_bids) |>
+    group_by(bidder_id) |> 
+    slice_max(seller_share, n = 1) |> 
+    collect()
+```
+
+**(h)**
+
+Use a relative cutoff, not an absolute one: e.g., above 2× the median seller_share (as in the scaffold).
+
+
+Could add: 
+
+- Add a minimum activity guard (e.g., ≥ 8–10 auctions) to avoid small-sample noise.
+- Optionally sanity-check by category or seller size so specialists in tiny niches don't dominate the list.
+
+```{r}
+#| eval: false
+median_concentration <- 
+    median(concentration$seller_share)
+
+questionable_bidders <-
+    concentration %>%
+    filter(seller_share > 2 * median_concentration)
+```
+
+**(i)** 
+Blending in: keeping concentration moderate avoids looking obvious.
+
+Rotation across sellers/items: a coordinated account may support several sellers or product lines.
+
+High denominator: very active bidders can still devote hundreds of bids to one seller while the percentage stays ~20–30%.
+
+**(j)** 
+```{r}
+#| eval: false
+
+# Step 1: winners per auction
+winners <- 
+    tbl(con, "orders") |>
+    select(auction_id, winner_id)
+
+# Step 2: distinct auctions each bidder joined
+bidder_auctions <- 
+    bids_items |>
+    distinct(bidder_id, auction_id)
+
+# Step 3: join winners and compute win_rate
+win_rates <- 
+    bidder_auctions |>
+    left_join(winners, by = "auction_id") |>
+    mutate(won = bidder_id == winner_id) |>
+    group_by(bidder_id) |>
+    summarise(
+        auctions_participated = n(),
+        auctions_won          = sum(won, na.rm = TRUE),
+        .groups = "drop"
+    ) |>
+    mutate(win_rate = auctions_won / auctions_participated) |> 
+    collect()
+
+```
+
+**(k)**. 
+
+```{r}
+#| eval: false
+shill_metrics <-
+    win_rates |> 
+    left_join(concentration, by = "bidder_id")
+
+write_csv(shill_metrics, "data/shill_metrics.csv")
+```
+
+**(l)**. 
+
+```{r}
+#| eval: false
+ggplot(shill_metrics) +
+    geom_point(
+        aes(x = win_rate,
+            y = seller_share)
+    ) +
+    theme_minimal()
+    
+```
+
+High concentration + Low win rate: strongest review zone (focused on one seller but rarely wins → price-pushing pattern).
+
+High concentration + High win rate: could be a loyal specialist or inside advantage; needs context.
+
+Low concentration + Low win rate: casual or inexperienced bidder.
+
+Low concentration + High win rate: effective bargain-hunter; unlikely to be shill-like.
+
+**(m)** (Optional, if time). 
+
+The “excess win rate”:
+
+What it is (intuition only):
+For each auction with  k bidders, a neutral, fair-chance win rate is  1/k. For a bidder who joins many auctions, take the average of 1/k over their auctions → that's their expected win rate.
+
+Then compute excess win rate = actual win rate − expected win rate. Look for situations where win_rate a lot less (how to measure / relative to what? perhaps a metric of standard deviation of win rate, or position in a distribution) than the expected win rate.
+
+Why it's sensible:
+
+- Adjusts for crowding (harder to win big auctions).
+- Lets “0.25” mean different things when you usually face 3 rivals vs 20.
+
+Why we didn't use it as the main metric:
+
+- A bit more mathy; needs nuanced explanation (to managers as well!).
+- Can be noisy with few auctions; assumes independence.
+
+If you want one notch more rigor (still simple):
+
+Use excess win rate with concentration:
+
+- Flag if excess win ≤ −0.15 (under-winning vs fair chance) and seller_share ≥ 0.60, with ≥ 10 auctions.
+
+Manager line: “These bidders focus on one seller yet win less than a fair-chance baseline—good review candidates (not proof). We'd check bid timelines and device/IP overlap next.”
+
 :::
 
 :::
