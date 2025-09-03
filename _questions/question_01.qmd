@@ -33,15 +33,13 @@ p1 <-
 p2 <-
     auction_results |>
     ggplot() +
-    YOUR_CODE(aes(x = YOUR_CODE), n_bins = YOUR_CODE) +
+    YOUR_CODE(aes(x = YOUR_CODE), bins = YOUR_CODE) +
     theme_minimal()
 
 p3 <-
     auction_results |>
-    ggplot() +
-    YOUR_CODE(aes(x = YOUR_CODE,
-                   y = YOUR_CODE)
-               ) +
+    ggplot(aes(x = YOUR_CODE, y = YOUR_CODE)) +
+    YOUR_CODE() +
     geom_smooth(method = "lm") +
     theme_minimal()
 
@@ -64,7 +62,7 @@ seller_profile <-
         n_auctions    = YOUR_CODE(),
         median_price  = YOUR_CODE(final_price, na.rm = TRUE),
         median_bids   = YOUR_CODE(num_bids, na.rm = TRUE),
-        share_missing_winner = YOUR_CODE(is.na(YOUR_CODE)),
+        share_missing_winner = YOUR_CODE(is.na(YOUR_CODE)) / n_auctions,
         .groups = "drop"
     ) |>
     arrange(YOUR_CODE(n_auctions))
@@ -186,6 +184,12 @@ p1 / p2 / p3
 
 **(d)**.
 
+* **num_bids histogram**: there’s a big spike at exactly ~15 bids and a sharp drop beyond ~20. That heap at one count is unusual—could be a platform rule, data artifact, or coordinated behaviour to hit a target count. Worth a note.
+
+ **num_bids vs final_price**: clear positive trend (more bids → higher price), but with wide vertical spread at each bid count. In the far right columns (20–27 bids) there are still relatively low closing prices, which fits the “many bids, modest price” review pattern.
+
+So for 1(d): I’d cite (i) the heap at 15 bids, and (ii) high-bid-count auctions that still close near the lower half of prices as suggestive (not proof).
+
 **(e)**.
 
 ```{r}
@@ -197,7 +201,7 @@ seller_profile <-
         n_auctions    = n(),
         median_price  = median(final_price, na.rm = TRUE),
         median_bids   = median(num_bids, na.rm = TRUE),
-        share_missing_winner = sum(is.na(winner_id)),
+        share_missing_winner = sum(is.na(winner_id)) / n_auctions,
         .groups = "drop"
     ) |>
     arrange(desc(n_auctions))

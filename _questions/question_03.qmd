@@ -3,6 +3,38 @@
 
 Our next data source is a database so we can join tables at scale (bids, auctions, items, users, orders) and study relationships: who bids on whom, how concentrated that behaviour is, and whether it translates into wins. Using the same `dplyr` verbs on a database backend, we'll push work to the database and only `collect()` results when needed.
 
+::: {.callout-warning collapse=true}
+## Quarto gotcha: close your DuckDB connection before you Render {.unnumbered}
+
+Quarto renders your document in a fresh R session. If you opened a DuckDB connection in the Console (or earlier chunk) and leave it open, that session may lock the .duckdb file, causing errors like “database is locked” or “unable to open database file.”
+
+You can fix this by following one of these routes:
+
+* Manage the connection inside the document and close it at the end
+
+```{r}
+#| eval: false
+library(DBI); 
+library(duckdb)
+con <- dbConnect(duckdb(), dbdir = "data/auctions.duckdb")
+
+# ... your analysis ...
+
+dbDisconnect(con, shutdown = TRUE)
+```
+
+If you connected in the Console, run:
+
+```{r}
+#| eval: false
+dbDisconnect(con, shutdown = TRUE)
+```
+
+before clicking Render.
+
+(If you still see a lock—especially on Windows—restart R and render again.)
+:::
+
 **(a)**. Explain how a database differs from the CSV and JSON data types we have seen so far.
 
 **(b)**. Connect to the database stored in `data/auctions.duckdb` and list the tables present in it by completing the code below.

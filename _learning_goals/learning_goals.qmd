@@ -3,6 +3,7 @@
 
 By the end of this tutorial, you should be able to:
 
-- COMPLETE THIS
-- WITH MULTIPLE BULLETS
+* Apply tidyverse workflows across alternative data sources (CSV, JSON Lines, DuckDB) to wrangle, flatten, and join auction data into tidy tables suitable for analysis.
+
+* Analyze outcomes and telemetry by creating visuals and simple metrics (seller_focus, win_rate) to identify patterns that could indicate shill behaviour.
 :::

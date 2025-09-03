@@ -33,7 +33,8 @@ Explain the structure of this record in words (what's at the top level vs. what'
 ::: {.callout-tip collapse = "true"}
 ## Streaming JSON has a different structure.
 
-This JSON file has a different structure than we saw in the reading: it's streaming JSON (JSON Lines)—one complete JSON record per line, with no surrounding [] array and no commas between records.
+This JSON file has a different structure than we saw in the reading and in the lecture.
+It's called streaming JSON (or sometimes "JSON Lines") — one complete JSON record per line, with no surrounding [] array and no commas between records.
 
 Think of it like a log file: one complete JSON record per line.
 (Regular JSON is often one big list: `[{...}, {...}, ...]`.)
