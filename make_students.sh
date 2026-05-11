@@ -5,11 +5,20 @@ OUT="tutorial_student.qmd"
 
 # 🔼 STEP 1: Add clean YAML header
 echo "---" >> "$OUT"
-awk '
+STUDENT_HEADER=$(awk '
   /# BEGIN STUDENT HEADER/ { in_block = 1; next }
   /# END STUDENT HEADER/   { in_block = 0; next }
   in_block == 1
-' _quarto-r-questions.yml >> "$OUT"
+' _quarto-r-questions.yml)
+
+if [[ -n "$STUDENT_HEADER" ]]; then
+  echo "$STUDENT_HEADER" >> "$OUT"
+else
+  echo "title: 'Tutorial 06: Storing & Retrieving Data'" >> "$OUT"
+  echo "author: Foundations of Business Analytics" >> "$OUT"
+  echo "date: today" >> "$OUT"
+  echo 'date-format: "MMMM, YYYY"' >> "$OUT"
+fi
 echo "---" >> "$OUT"
 echo "" >> "$OUT"
 
@@ -34,7 +43,7 @@ qnum=1
 
 for f in "${FILES[@]}"; do
   # Detect question type
-  qtype=$(grep -oP '(?<=<!-- question-type: )\w+(?= -->)' "$f")
+  qtype=$(sed -n 's/^<!-- question-type: \([[:alnum:]_-]*\) -->$/\1/p' "$f" | head -n 1)
 
   # Insert prepare header once before first prepare question
   if [[ "$qtype" == "prepare" && "$inserted_prepare" -eq 0 ]]; then
