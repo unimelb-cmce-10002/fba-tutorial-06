@@ -57,7 +57,7 @@ Each question file can also include **instructor-only material**:
   <!-- END PROFILE:r-solutions -->
   ```
 
-The script will strip this material out of the final `tutorial_student.qmd` but preserve it for teaching preparation.
+The script will strip this material out of the final `tutorial_10_student.qmd` but preserve it for teaching preparation.
 
 ### 3. Include Learning Goals and Business Context
 You can update the following files:
@@ -68,11 +68,11 @@ You can update the following files:
 These are included at the top of the tutorial, and can also contain teaching-only blocks.
 
 ### 4. Set Metadata for the Student Tutorial
-The student generator writes a default YAML header for Tutorial 06. If you need to override it, add this optional block to `_quarto-r-questions.yml`:
+The student generator writes a default YAML header for Tutorial 10. If you need to override it, add this optional block to `_quarto-r-questions.yml`:
 
 ```yaml
 # BEGIN STUDENT HEADER
-title: 'Tutorial 06: Storing & Retrieving Data'
+title: 'Tutorial 10: Storing & Retrieving Data'
 author: Foundations of Business Analytics
 date: today
 date-format: "MMMM, YYYY"
@@ -100,7 +100,7 @@ The file `tutorial.qmd` is the **master document** rendered by each Quarto profi
     ```
 - It is rendered differently depending on the profile used (e.g. `r-solutions` will show answers, `r-teaching-guide` will show teaching notes)
 
-Note: `tutorial.qmd` is not used when generating `tutorial_student.qmd`. The student version is assembled separately using `make_students.sh`.
+Note: `tutorial.qmd` is not used when generating `tutorial_10_student.qmd`. The student version is assembled separately using `make_students.sh`.
 
 ## ▶️ Build and Render the Tutorial
 
@@ -122,7 +122,7 @@ This will:
 bash make_students.sh
 ```
 
-This generates `tutorial_student.qmd`, which includes:
+This generates `tutorial_10_student.qmd`, which includes:
 
 - Only student-visible content
 - All prepare/in-class questions in the right place
