@@ -1,0 +1,182 @@
+<!-- question-type: inclass -->
+### Exercise 4: Measuring bidder-seller concentration
+
+Activity tells us who bids a lot, but it does not tell us whether a bidder repeatedly supports the same seller. For shill-bidding review, that relationship matters: a bidder who focuses heavily on one seller's auctions may be more interesting than an equally active bidder who spreads bids across many sellers.
+
+In this exercise, we will link bid events to sellers and compute each bidder's highest seller concentration: the share of that bidder's bids that go to their top seller.
+
+**(a)**. A colleague suggests counting how often the same bidder bids against the same seller and across how many auctions. Why might these metrics be useful for identifying possible shill bidding behaviour? What innocent explanation could produce the same pattern?
+
+**(b)**. We will instead compute the share of one bidder's bids that go to their top seller. What is the advantage of using a share rather than only raw bidder-seller counts?
+
+**(c)**. Complete the code below. As you work through it, write one sentence explaining what each step contributes to the final `concentration` table.
+
+```{r}
+#| eval: false
+# Step 1: rename to make easier to track
+bids <- 
+    tbl(con, "bids") |>
+    rename(bidder_id = user_id)
+
+# Step 2: link bids to the seller whose auction they are participating in
+bids_items <- 
+    bids |>
+    left_join(tbl(con, "auctions") |> 
+                  select(auction_id, item_id),
+                by = "auction_id") |>
+    left_join(tbl(con, "items")    |> 
+                  select(item_id, seller_id),
+                by = "item_id")
+
+# Step 3: how many bids does each bidder make in total?
+total_bids_per_bidder <- 
+    bids_items |>
+    YOUR_FUNCTION(bidder_id, name = "total_bids")
+
+# Step 4: how many bids does each bidder make to each seller?
+bidder_seller_bids <- 
+    bids_items |>
+    YOUR_FUNCTION(YOUR_VARIABLE, YOUR_VARIABLE, name = "bids_to_seller")
+
+# Step 5: find each bidder's highest concentration on one seller
+concentration <- 
+    YOUR_DATASET |>
+    YOUR_FUNCTION(YOUR_DATASET, 
+              by = "bidder_id") |>
+    mutate(seller_share = YOUR_VARIABLE / YOUR_VARIABLE) |>
+    group_by(bidder_id) |> 
+    slice_max(seller_share, n = 1) |> 
+    collect()
+```
+
+**(d)**. Inspect `concentration`. Do any concentration ratios appear high enough to review? Identify a small set of bidders whose behaviour you would explore more closely, and explain your decision rule.
+
+**(e)**. Why might a possible shill bidder's share of bids to one seller be an intermediate value, such as 20-30 percent, rather than above 50 percent?
+
+<!-- BEGIN PROFILE:r-teaching-guide -->
+::: {.content-visible when-profile="r-teaching-guide"}
+
+::: {.teaching-block}
+
+::: {.teaching-block-header}
+Teaching Note
+:::
+
+::: {.teaching-block-body}
+
+**Learning objective.** Students should link bid events to sellers, compute a normalised bidder-seller concentration metric, and interpret high concentration as a review signal rather than proof.
+
+**Core concepts to highlight**
+
+- The join path is `bids -> auctions -> items`.
+- Raw bidder-seller counts are biased toward highly active bidders; shares are more comparable across bidders.
+- `seller_share` is a concentration measure: bids to top seller divided by total bids.
+- High concentration may reflect fraud, loyalty, niche interests, or a small market.
+
+**Suggested prompts**
+
+- "What table tells us who the seller is?"
+- "Why do we compute total bids before seller share?"
+- "What minimum activity rule would you add before reviewing a bidder?"
+
+**Common misunderstandings**
+
+- Joining to `users` to find the seller, when the seller is attached to the item.
+- Treating one high share from a low-activity bidder as meaningful.
+- Assuming a suspicious account must bid almost exclusively for one seller.
+
+:::
+
+:::
+
+:::
+<!-- END PROFILE:r-teaching-guide -->
+
+<!-- BEGIN PROFILE:r-solutions -->
+::: {.content-visible when-profile="r-solutions" when-profile="r-teaching-guide"}
+
+::: {.solution-block}
+
+::: {.solution-block-header}
+Solution
+:::
+
+::: {.solution-block-body}
+
+**(a)**.
+
+Repeated bidder-seller ties across many auctions can suggest coordination or price support for that seller. Innocent explanations include loyal customers, specialist collectors, repeat buyers in a niche category, local preference, or a small market where the same users often interact.
+
+**(b)**.
+
+A share normalises for activity. Raw counts tend to rank very active bidders highly, even when they spread bids widely. `seller_share` asks a more comparable question: what proportion of this bidder's activity is focused on their top seller?
+
+**(c)**.
+
+```{r}
+#| eval: false
+# Step 1: rename to make easier to track
+bids <- 
+    tbl(con, "bids") |>
+    rename(bidder_id = user_id)
+
+# Step 2: link bids to the seller whose auction they are participating in
+bids_items <- 
+    bids |>
+    left_join(tbl(con, "auctions") |> 
+                  select(auction_id, item_id),
+                by = "auction_id") |>
+    left_join(tbl(con, "items")    |> 
+                  select(item_id, seller_id),
+                by = "item_id")
+
+# Step 3: how many bids does each bidder make in total?
+total_bids_per_bidder <- 
+    bids_items |>
+    count(bidder_id, name = "total_bids")
+
+# Step 4: how many bids does each bidder make to each seller?
+bidder_seller_bids <- 
+    bids_items |>
+    count(bidder_id, seller_id, name = "bids_to_seller")
+
+# Step 5: find each bidder's highest concentration on one seller
+concentration <- 
+    bidder_seller_bids |>
+    left_join(total_bids_per_bidder, 
+              by = "bidder_id") |>
+    mutate(seller_share = bids_to_seller / total_bids) |>
+    group_by(bidder_id) |> 
+    slice_max(seller_share, n = 1) |> 
+    collect()
+```
+
+**(d)**.
+
+A reasonable first pass is to use a relative cutoff and a minimum activity check. For example, inspect bidders whose `seller_share` is well above the median and who have enough total bids for the ratio to be meaningful.
+
+```{r}
+#| eval: false
+median_concentration <- 
+    median(concentration$seller_share)
+
+questionable_bidders <-
+    concentration |>
+    filter(
+        seller_share > 2 * median_concentration,
+        total_bids >= 10
+    )
+```
+
+This creates review candidates, not conclusions. A high concentration could still reflect legitimate specialisation.
+
+**(e)**.
+
+A shill account may try to blend in by bidding across several sellers or product lines. A very active account can also place many bids with one seller while the percentage remains moderate. For review, an intermediate share can still be meaningful when combined with low win rates, timing patterns, or device/IP overlap.
+
+:::
+
+:::
+
+:::
+<!-- END PROFILE:r-solutions -->

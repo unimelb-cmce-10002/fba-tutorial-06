@@ -1,0 +1,205 @@
+<!-- question-type: inclass -->
+### Exercise 5: Combining concentration with win rates
+
+Concentration is useful, but it is still incomplete. A genuine buyer may focus on one seller because they like that seller's products. A possible shill bidder is more concerning when they appear often in a seller's auctions but rarely win. That pattern is consistent with pushing prices up while avoiding the final purchase.
+
+In this exercise, we will compute bidder win rates, combine them with seller concentration, and use the result to identify review candidates.
+
+**(a)**. Explain why win rate adds useful context to the concentration metric. Why should win rate be calculated using distinct auctions rather than raw bid rows?
+
+**(b)**. Calculate how often bidders win the auctions they participate in.
+
+```{r}
+#| eval: false
+# Step 1: winners per auction
+winners <- 
+    tbl(con, "orders") |>
+    select(auction_id, winner_id)
+
+# Step 2: distinct auctions each bidder joined
+bidder_auctions <- 
+    bids_items |>
+    YOUR_FUNCTION(bidder_id, auction_id)
+
+# Step 3: join winners and compute win_rate
+win_rates <- 
+    bidder_auctions |>
+    YOUR_FUNCTION(winners, by = "auction_id") |>
+    mutate(won = bidder_id == winner_id) |>
+    group_by(bidder_id) |>
+    summarise(
+        auctions_participated = YOUR_FUNCTION(),
+        auctions_won          = YOUR_FUNCTION(YOUR_VARIABLE, na.rm = TRUE),
+        .groups = "drop"
+    ) |>
+    mutate(win_rate = YOUR_VARIABLE / YOUR_VARIABLE) |> 
+    collect()
+```
+
+**(c)**. Join the `win_rates` data to the `concentration` data and save the combined dataset to `data/shill_metrics.csv`.
+
+```{r}
+#| eval: false
+shill_metrics <-
+    YOUR_DATASET |> 
+    YOUR_FUNCTION(YOUR_DATASET, by = "bidder_id")
+
+YOUR_FUNCTION(YOUR_DATASET, "data/shill_metrics.csv")
+```
+
+**(d)**. Create a scatter plot showing the relationship between `win_rate` and `seller_share`.
+
+```{r}
+#| eval: false
+ggplot(shill_metrics) +
+    geom_point(
+        aes(x = YOUR_VARIABLE,
+            y = YOUR_VARIABLE)
+    ) +
+    theme_minimal()
+```
+
+Which region of this plot would you treat as the strongest review zone for possible shill bidding? Explain why, and name one piece of additional evidence you would want before escalating the case.
+
+**(e)**. Write a short manager-facing summary. Identify the type of bidder you would review first and explain why your language should describe the result as a review flag rather than proof of fraud.
+
+**(f)** (Optional, if time). Propose an alternative way to use the `win_rate` and `concentration` data, along with any other data you have access to in the exercise, to identify possible shill bidders. Explain why your method works. You can explain your method intuitively; you do not need to code a solution.
+
+When you finish the database work, close the DuckDB connection:
+
+```{r}
+#| eval: false
+dbDisconnect(con, shutdown = TRUE)
+```
+
+<!-- BEGIN PROFILE:r-teaching-guide -->
+::: {.content-visible when-profile="r-teaching-guide"}
+
+::: {.teaching-block}
+
+::: {.teaching-block-header}
+Teaching Note
+:::
+
+::: {.teaching-block-body}
+
+**Learning objective.** Students should calculate bidder win rates at the correct granularity, combine win rate with seller concentration, and interpret the two-metric plot as a fraud-review screen.
+
+**Core concepts to highlight**
+
+- Win rate must use distinct bidder-auction pairs, not raw bid counts.
+- Low win rate plus high seller concentration is the strongest review pattern in this simplified workflow.
+- The scatter plot is a screening tool; it does not prove intent.
+- Manager-facing language should be careful: "review candidates", "follow-up evidence", and "consistent with" are better than accusations.
+
+**Suggested prompts**
+
+- "Why would a shill bidder often prefer not to win?"
+- "Which corner of the plot worries you most?"
+- "What evidence would reduce false positives?"
+
+**Common misunderstandings**
+
+- Counting every bid as a chance to win, which overweights active bidders.
+- Treating high concentration plus low win rate as conclusive.
+- Ignoring sample size: a bidder with one auction can have an extreme win rate by chance.
+
+:::
+
+:::
+
+:::
+<!-- END PROFILE:r-teaching-guide -->
+
+<!-- BEGIN PROFILE:r-solutions -->
+::: {.content-visible when-profile="r-solutions" when-profile="r-teaching-guide"}
+
+::: {.solution-block}
+
+::: {.solution-block-header}
+Solution
+:::
+
+::: {.solution-block-body}
+
+**(a)**.
+
+Win rate helps distinguish buyers who focus on a seller and actually buy from bidders who focus on a seller but rarely win. Win rate should use distinct auctions because one auction is one opportunity to win. Counting raw bids would make a bidder who places many bids in one auction look as if they had many separate chances to win.
+
+**(b)**.
+
+```{r}
+#| eval: false
+# Step 1: winners per auction
+winners <- 
+    tbl(con, "orders") |>
+    select(auction_id, winner_id)
+
+# Step 2: distinct auctions each bidder joined
+bidder_auctions <- 
+    bids_items |>
+    distinct(bidder_id, auction_id)
+
+# Step 3: join winners and compute win_rate
+win_rates <- 
+    bidder_auctions |>
+    left_join(winners, by = "auction_id") |>
+    mutate(won = bidder_id == winner_id) |>
+    group_by(bidder_id) |>
+    summarise(
+        auctions_participated = n(),
+        auctions_won          = sum(won, na.rm = TRUE),
+        .groups = "drop"
+    ) |>
+    mutate(win_rate = auctions_won / auctions_participated) |> 
+    collect()
+```
+
+**(c)**.
+
+```{r}
+#| eval: false
+shill_metrics <-
+    win_rates |> 
+    left_join(concentration, by = "bidder_id")
+
+write_csv(shill_metrics, "data/shill_metrics.csv")
+```
+
+**(d)**.
+
+```{r}
+#| eval: false
+ggplot(shill_metrics) +
+    geom_point(
+        aes(x = win_rate,
+            y = seller_share)
+    ) +
+    theme_minimal()
+```
+
+The strongest review zone is high `seller_share` and low `win_rate`: bidders who focus on one seller but rarely win. This is consistent with price support, but it is still only a flag. Additional evidence could include bid timing, repeated rapid outbidding, shared IP/device signals, account links, or whether the same bidder appears across many auctions from the same seller.
+
+**(e)**.
+
+A suitable manager-facing summary would be:
+
+"The first review group should be bidders with unusually high concentration on one seller and unusually low win rates. This pattern is consistent with accounts that help raise prices without intending to buy. It is not proof of fraud, because loyal bidders, niche markets, and small samples can produce similar patterns. We should treat these users as review candidates and check bid timing, device/IP overlap, and repeated seller links before escalating."
+
+**(f)**.
+
+One option is an excess win-rate approach. For each auction with `k` bidders, a neutral fair-chance win rate is roughly `1 / k`. For each bidder, average that expected win rate across the auctions they entered, then compare actual win rate with expected win rate. Bidders with high seller concentration and actual win rates well below their expected win rates would be strong review candidates.
+
+This is useful because it adjusts for auction crowding: a bidder who usually enters auctions with many competitors should naturally win less often than a bidder who enters small auctions.
+
+```{r}
+#| eval: false
+dbDisconnect(con, shutdown = TRUE)
+```
+
+:::
+
+:::
+
+:::
+<!-- END PROFILE:r-solutions -->

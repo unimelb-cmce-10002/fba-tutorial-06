@@ -27,3 +27,7 @@ You will discuss these exercises in class with your peers in small groups and wi
 <!-- END INSERT:inclass-header -->
 
 {{< include _questions/question_03.qmd >}}
+
+{{< include _questions/question_04.qmd >}}
+
+{{< include _questions/question_05.qmd >}}
