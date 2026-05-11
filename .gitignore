@@ -1,5 +1,6 @@
 *.html
 *.Rproj
+.DS_Store
 .quarto/*
 .Rproj.user/*
 .Rhistory
@@ -7,3 +8,8 @@
 
 /.quarto/
 *_student.qmd
+AGENT_INSTRUCTIONS.md
+CONSTRAINTS.md
+PROGRESS.md
+scratch_pad.md
+in_class_check_questions/

@@ -2,7 +2,7 @@
 ### Exercise 2: Digging Deeper into User Behaviour
 
 In Exercise 1, we built a market baseline from auction outcomes: prices, bid counts, and seller summaries. That showed us where to look, but not how those outcomes happened.
-Next, we'll bring in behavioral telemetry from a JSON file (devices/sessions). Using `dplyr`/`tidyr` verbs, we'll flatten the nested JSON and link it to our auctions so we can ask: who was active, on which devices, and how activity clustered around particular sellers.
+Next, we'll bring in behavioural telemetry from a JSON file (devices/sessions). Using `dplyr`/`tidyr` verbs, we'll flatten the nested JSON and link it to our auctions so we can ask: who was active, on which devices, and how activity clustered around particular sellers.
 
 
 **(a)**. An example record in the JSON file `data/bids.jsonl` is as follows: 
@@ -34,14 +34,14 @@ Explain the structure of this record in words (what's at the top level vs. what'
 ## Streaming JSON has a different structure.
 
 This JSON file has a different structure than we saw in the reading and in the lecture.
-It's called streaming JSON (or sometimes "JSON Lines") — one complete JSON record per line, with no surrounding [] array and no commas between records.
+It's called streaming JSON (or sometimes "JSON Lines"): one complete JSON record per line, with no surrounding `[]` array and no commas between records.
 
 Think of it like a log file: one complete JSON record per line.
 (Regular JSON is often one big list: `[{...}, {...}, ...]`.)
 
-Why it's used: handles large files smoothly — you can read it line by line without loading everything.
+Why it is used: it handles large files smoothly because you can read it line by line without loading everything.
 
-How to load in R: use `stream_in()` (not `read_json`()`).
+How to load in R: use `stream_in()` (not `read_json()`).
 
 Common gotcha: don't add brackets or commas between lines; each line must be valid JSON on its own.
 
@@ -65,7 +65,7 @@ bids_json <-
 
 ```
 
-**(d)**. One piece of evidence pointing towards shill bidding is if multiple bidders are using the same IP address. Explain why this is the case, then complete the code below to isolate those instances.
+**(d)**. One possible review signal is multiple bidders using the same IP address. Explain why this could matter, then complete the code below to isolate those instances.
 
 ::: {.callout-tip collapse = "true"}
 What's an IP address (and why we care)?
@@ -88,7 +88,7 @@ same_ip <-
     arrange(desc(n)) 
 ```
 
-**(e)**. Another possible sign of shill bidding could be auto-bidding. Explain when auto-bids could be signs of shill-bids versus legitimate behaviour. Complete the code below to measure the share of auto-bids per auction.
+**(e)**. Another possible review signal is auto-bidding. Explain when auto-bids might be consistent with shill bidding versus legitimate behaviour. Complete the code below to measure the share of auto-bids per auction.
 
 ::: {.callout-tip collapse = true}
 What is auto-bidding (proxy bidding)?
@@ -115,7 +115,7 @@ auto_bids <-
     arrange(desc(num_auto_bids))
 ```
 
-**(f)** Let's combine the data on shared IP addresses and auto-bids into one data-frame. Complete the code below, and then identify any auctions that might have seen shill bidding. Explain your  answer. 
+**(f)** Let's combine the data on shared IP addresses and auto-bids into one data frame. Complete the code below, and then identify any auctions that might warrant review. Explain your answer.
 
 ```{r}
 #| eval: false
@@ -130,8 +130,8 @@ same_ip_auctions <-
     )
 
 shill_signals <- 
-    YOUR_DATA |>
-    YOUR_FUNCTION(YOUR_DATA, by = "auction_id") |> 
+    same_ip_auctions |>
+    left_join(YOUR_DATA, by = "auction_id") |> 
     arrange(desc(n_shared_ips), desc(share_auto))
 
 ```
@@ -156,11 +156,11 @@ Students should:
 
 - Flatten nested JSON (bidder, device) into tidy columns and identify nested fields.
 
-- Use simple telemetry signals (shared IPs, auto-bid share) to create a review list of auctions—clearly distinguishing suggestive patterns from evidence.
+- Use simple telemetry signals (shared IPs, auto-bid share) to create a review list of auctions, clearly distinguishing suggestive patterns from evidence.
 
 ✅   **Core Concepts to Highlight**
 
-- Steaming JSON vs JSON: one record per line; load with `stream_in()`; then `unnest_wider()` to flatten nested objects.
+- Streaming JSON vs JSON: one record per line; load with `stream_in()`; then `unnest_wider()` to flatten nested objects.
 
 - Nesting → columns: bidder.* → bidder_id, bidder_rating, bidder_country; device.* → device_os, device_browser.
 

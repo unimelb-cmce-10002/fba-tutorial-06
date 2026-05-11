@@ -1,7 +1,7 @@
 <!-- question-type: prepare -->
-### Exercise 1: Auction results baseline.
+### Exercise 1: Auction Results Baseline
 
-**(a).** Read the CSV file located at `data/auction_results.csv` and examine its structure by completing the code below:
+**(a)**. Read the CSV file located at `data/auction_results.csv` and examine its structure by completing the code below:
 
 ```{r}
 #| eval: false
@@ -45,9 +45,6 @@ p3 <-
 
 p1 / p2 / p3
 ```
-
-
-
 
 **(d)**. Provide a short explanation of your findings from (c). Are there any patterns that are suggestive of shill bidding?
 
@@ -98,7 +95,7 @@ Students should:
 
 💬 **Suggested In-Class Prompts** (if needed)
 
-What does one row represent? Say it in one sentence."
+"What does one row represent? Say it in one sentence."
 
 "Before plotting: predict the shape of the final_price histogram. Were you right?"
 
@@ -186,9 +183,9 @@ p1 / p2 / p3
 
 * **num_bids histogram**: there’s a big spike at exactly ~15 bids and a sharp drop beyond ~20. That heap at one count is unusual—could be a platform rule, data artifact, or coordinated behaviour to hit a target count. Worth a note.
 
- **num_bids vs final_price**: clear positive trend (more bids → higher price), but with wide vertical spread at each bid count. In the far right columns (20–27 bids) there are still relatively low closing prices, which fits the “many bids, modest price” review pattern.
+* **num_bids vs final_price**: clear positive trend (more bids → higher price), but with wide vertical spread at each bid count. In the far right columns (20–27 bids) there are still relatively low closing prices, which fits the “many bids, modest price” review pattern.
 
-So for 1(d): I’d cite (i) the heap at 15 bids, and (ii) high-bid-count auctions that still close near the lower half of prices as suggestive (not proof).
+For part (d), the main review signals are (i) the heap at 15 bids and (ii) high-bid-count auctions that still close near the lower half of prices. These are suggestive patterns, not proof.
 
 **(e)**.
 
@@ -208,7 +205,7 @@ seller_profile <-
 ```
 
 **(f)**. 
-Interpreting seller profiles & what else you'd need
+Interpreting seller profiles and additional evidence needed
 
 Possibly suggestive seller patterns (from `n_auctions`, `median_price`, `median_bids`):
 

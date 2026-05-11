@@ -17,21 +17,21 @@ For an auction platform, shill bidding creates serious problems:
 Your task in this exercise is to step into the role of an analyst at an online auction company. You've been asked to examine bidding data and look for patterns that might indicate suspicious activity. To do this, you'll need to:
 
 1. Explore the auctions data provided in multiple formats (CSV, JSON, database).
-2. Use wrangling and visualization tools to spot differences between ordinary buyers and suspicious bidders.
-3. Interpret these patterns in business terms — would a manager at the auction platform be worried?
+2. Use wrangling and visualisation tools to spot differences between ordinary buyers and suspicious bidders.
+3. Interpret these patterns in business terms: would a manager at the auction platform be worried?
 
 ## The Data: Auction Bids and Devices
 
 We'll be working with synthetic data that simulates an online auction platform. It comes in a few different formats:
 
- - CSV / SQLite: structured data on auctions, bidders, bid amounts, and timestamps.
+- CSV / DuckDB: structured data on auctions, bidders, bid amounts, and timestamps.
 - JSON: extra details about each bidder's activity, such as the devices or sessions they used.
 
-Together, these files let us see not just who is bidding and how much, but also how they are bidding — which can be a clue for spotting suspicious behavior.
+Together, these files let us see not just who is bidding and how much, but also how they are bidding, which can be a clue for spotting suspicious behaviour.
 
 ## The Method: Wrangling Data Across Backends
 
-In this tutorial, the focus isn't just on wrangling data — it's on seeing how the same tidyverse tools work across different backends. We'll be using:
+In this tutorial, the focus isn't just on wrangling data. It is on seeing how the same tidyverse tools work across different backends. We'll be using:
 
 - `dplyr`: to filter, group, summarise, and join data.
 - `tidyr`: to reshape nested or messy data into tidy tables.
@@ -39,7 +39,7 @@ In this tutorial, the focus isn't just on wrangling data — it's on seeing how 
 You'll apply these verbs on top of different data sources:
 
 - Flat files (CSV)
-- Databases (SQLite)
+- Databases (DuckDB)
 - Nested structures (JSON)
 
 The key idea is that once you know the tidyverse workflow, it carries over no matter where the data lives.
@@ -52,4 +52,3 @@ library(jsonlite) # For reading JSON files
 library(DBI) # For working with databases
 library(duckdb) # for working with duckdb databases
 ```
-
