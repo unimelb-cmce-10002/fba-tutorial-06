@@ -1,6 +1,6 @@
 #!/bin/bash
 
-OUT="tutorial_student.qmd"
+OUT="tutorial_10_student.qmd"
 > "$OUT"
 
 # 🔼 STEP 1: Add clean YAML header
@@ -14,7 +14,7 @@ STUDENT_HEADER=$(awk '
 if [[ -n "$STUDENT_HEADER" ]]; then
   echo "$STUDENT_HEADER" >> "$OUT"
 else
-  echo "title: 'Tutorial 06: Storing & Retrieving Data'" >> "$OUT"
+  echo "title: 'Tutorial 10: Storing & Retrieving Data'" >> "$OUT"
   echo "author: Foundations of Business Analytics" >> "$OUT"
   echo "date: today" >> "$OUT"
   echo 'date-format: "MMMM, YYYY"' >> "$OUT"

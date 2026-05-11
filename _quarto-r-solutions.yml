@@ -1,8 +1,8 @@
 project:
   render:
     - tutorial.qmd
-title: 'Solutions document: Storing & Retrieving Data'
+title: 'Tutorial 10 Solutions: Storing & Retrieving Data'
 format:
   html:
-    output-file: "tutorial-06-solutions"
+    output-file: "tutorial-10-solutions"
     output-ext:  "html"
