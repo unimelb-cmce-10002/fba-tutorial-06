@@ -1,0 +1,231 @@
+## Key R functions used in this notebook
+
+This page collects every new R function you used in this tutorial, in one place, as a quick-reference glossary. Each function below follows the same format:
+
+- **Package:** where the function comes from. Most functions you'll meet early on are **Base R** (built into R, no setup needed). Others live in packages that must be loaded first with `library()`.
+- **What it does:** a plain-English explanation, no jargon.
+- **Why you'd use it:** the everyday analyst reason you'd reach for it.
+- **Arguments:** the inputs you put inside the parentheses `()` to tell the function exactly what to work on. Some are required, some are optional. Arguments listed here are not necessarily exhaustive.
+- **Example:** the function used on this week's data, such as the `auction_results` table or the `auctions.duckdb` database.
+
+For more information on any function, use ?`function_name` in the R console (e.g. `?read_csv`) to see the official documentation, which includes a full list of arguments, descriptions, and often many examples.
+
+### `median()`
+
+**Package:** Base R
+
+**What it does:** Calculates the middle value of a set of numbers, once they're sorted from smallest to largest.
+
+**Why you'd use it:** It's a summary of the "typical" value that isn't thrown off by a few extreme outliers, which matters when data like prices are skewed.
+
+**Arguments:**
+
+- `x` — the numeric values, e.g. `final_price`.
+- `na.rm` — *(optional)* whether to ignore missing values before calculating, e.g. `na.rm = TRUE`.
+
+**Example:**
+
+```{r}
+#| eval: false
+median(auction_results$final_price, na.rm = TRUE)
+```
+
+### `stream_in()`
+
+**Package:** jsonlite
+
+**What it does:** Reads a streaming JSON file, also called JSON Lines, where each line of the file is one complete JSON record, and loads it into R as a data frame.
+
+**Why you'd use it:** Regular JSON-reading functions expect one big file wrapped in `[]`. A file like `data/bids.jsonl` isn't structured that way, so it needs `stream_in()` instead.
+
+**Arguments:**
+
+- `con` — a file connection to read from, created with `file()`, e.g. `file("data/bids.jsonl")`.
+
+**Example:**
+
+```{r}
+#| eval: false
+bids_json <- stream_in(file("data/bids.jsonl"))
+```
+
+### `file()`
+
+**Package:** Base R
+
+**What it does:** Creates a connection to a file on your computer, which other functions can then read from.
+
+**Why you'd use it:** `stream_in()` needs a connection object rather than a plain file path, so you wrap the path in `file()` first.
+
+**Arguments:**
+
+- `description` — the file path, in quotation marks, e.g. `"data/bids.jsonl"`.
+
+**Example:**
+
+```{r}
+#| eval: false
+file("data/bids.jsonl")
+```
+
+### `unnest_wider()`
+
+**Package:** tidyr
+
+**What it does:** Takes a column that holds nested data, like a small JSON object inside every row, and spreads its pieces out into their own separate columns.
+
+**Why you'd use it:** JSON records are often nested, so a column like `bidder` might actually contain an id, a rating, and a country all bundled together. `unnest_wider()` turns those into flat columns you can use directly.
+
+**Arguments:**
+
+- `col` — the nested column to flatten, e.g. `bidder`.
+- `names_sep` — *(optional)* text used to join the original column name to each new piece, e.g. `names_sep = "_"` turns the `id` inside `bidder` into a column called `bidder_id`.
+
+**Example:**
+
+```{r}
+#| eval: false
+bids_json <-
+    bids_json |>
+    unnest_wider(bidder, names_sep = "_") |>
+    unnest_wider(device, names_sep = "_")
+```
+
+### `dbConnect()`
+
+**Package:** DBI
+
+**What it does:** Opens a connection to a database.
+
+**Why you'd use it:** You need an open connection before you can list or query any tables stored inside a database file.
+
+**Arguments:**
+
+- `drv` — which database driver (engine) to connect with, e.g. `duckdb()`.
+- `dbdir` — the path to the database file, e.g. `"data/auctions.duckdb"`.
+
+**Example:**
+
+```{r}
+#| eval: false
+con <- dbConnect(duckdb(), dbdir = "data/auctions.duckdb")
+```
+
+### `duckdb()`
+
+**Package:** duckdb
+
+**What it does:** Creates a driver object that tells `dbConnect()` which type of database engine to use, DuckDB in this case.
+
+**Why you'd use it:** It's required as the first argument to `dbConnect()` whenever you're connecting to a DuckDB file.
+
+**Arguments:** none used in this tutorial (called with empty parentheses).
+
+**Example:**
+
+```{r}
+#| eval: false
+con <- dbConnect(duckdb(), dbdir = "data/auctions.duckdb")
+```
+
+### `dbDisconnect()`
+
+**Package:** DBI
+
+**What it does:** Closes an open connection to a database.
+
+**Why you'd use it:** You must close the connection before re-rendering your Quarto document, or the database file can stay "locked" and cause errors the next time you try to connect.
+
+**Arguments:**
+
+- `conn` — the database connection to close, e.g. `con`.
+- `shutdown` — *(optional)* whether to fully shut down the database engine, e.g. `shutdown = TRUE`.
+
+**Example:**
+
+```{r}
+#| eval: false
+dbDisconnect(con, shutdown = TRUE)
+```
+
+### `dbListTables()`
+
+**Package:** DBI
+
+**What it does:** Lists the names of every table stored inside a database.
+
+**Why you'd use it:** To see what data is available as soon as you connect, before writing any queries.
+
+**Arguments:**
+
+- `conn` — the database connection, e.g. `con`.
+
+**Example:**
+
+```{r}
+#| eval: false
+dbListTables(con)
+```
+
+### `tbl()`
+
+**Package:** dbplyr
+
+**What it does:** Creates a reference to a single table inside a database connection, which you can then use ordinary dplyr verbs on, like `group_by()` and `summarise()`.
+
+**Why you'd use it:** It lets you write familiar dplyr code against a database table without loading the whole table into memory first.
+
+**Arguments:**
+
+- `src` — the database connection, e.g. `con`.
+- `from` — the table name, in quotation marks, e.g. `"bids"`.
+
+**Example:**
+
+```{r}
+#| eval: false
+tbl(con, "bids") |> glimpse()
+```
+
+### `collect()`
+
+**Package:** dbplyr
+
+**What it does:** Runs the query you've built against a database table and brings the results back into R as an ordinary data frame.
+
+**Why you'd use it:** Tables created with `tbl(con, ...)` are "lazy": R doesn't actually run any calculations until you call `collect()`, so it's the step that pulls your finished result out of the database.
+
+**Arguments:**
+
+- `x` — the database query to run, usually piped in with `|>`.
+
+**Example:**
+
+```{r}
+#| eval: false
+bidder_activity <-
+    tbl(con, "bids") |>
+    group_by(user_id) |>
+    summarise(total_bids = n(), .groups = "drop") |>
+    collect()
+```
+
+### `write_csv()`
+
+**Package:** readr
+
+**What it does:** Saves a data frame to a CSV file on your computer.
+
+**Why you'd use it:** To store a finished result so it can be reused later or shared, without having to redo all the calculations.
+
+**Arguments:**
+
+- `x` — the data frame to save, e.g. `shill_metrics`.
+- `file` — the file path, in quotation marks, telling R where to save it, e.g. `"data/shill_metrics.csv"`.
+
+**Example:**
+
+```{r}
+#| eval: false
+write_csv(shill_metrics, "data/shill_metrics.csv")
+```
